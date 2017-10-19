@@ -2,7 +2,7 @@ package com.mathutils.math.matrix;
 
 import java.util.Iterator;
 
-import com.mathutils.vertex.Vertex2i;
+import com.mathutils.math.vertex.Vertex2i;
 
 /**
  * Represents a mathematical matrix.
@@ -26,6 +26,12 @@ public class Matrix implements Iterable<MatrixElement> {
 	this.cols = cols;
 	this.rows = rows;
 	matrix = new double[rows][cols];
+    }
+    
+    public Matrix(double[]... matrix) {
+	cols = matrix[0].length;
+	rows = matrix.length;
+	this.matrix = matrix;
     }
 
     public double get(int row, int col) {

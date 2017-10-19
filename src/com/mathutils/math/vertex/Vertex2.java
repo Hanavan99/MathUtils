@@ -1,4 +1,4 @@
-package com.mathutils.vertex;
+package com.mathutils.math.vertex;
 
 public class Vertex2<E> {
 

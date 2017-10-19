@@ -1,6 +1,6 @@
 package com.mathutils.math.matrix;
 
-import com.mathutils.vertex.Vertex2i;
+import com.mathutils.math.vertex.Vertex2i;
 
 /**
  * Represents an element in a matrix. This object stores the value of the

@@ -1,5 +1,7 @@
 package com.mathutils.math.matrix;
 
+import com.mathutils.math.vertex.Vertex2i;
+
 /**
  * Performs functions such as matrix math and matrix creation.
  * 
@@ -78,6 +80,22 @@ public class MatrixHelper {
 
     public static boolean compareSize(Matrix a, Matrix b) {
 	return a.getRows() == b.getRows() && a.getColumns() == b.getColumns();
+    }
+
+    public static void rref(Matrix a) {
+	
+    }
+
+    public static void addRows(Matrix a, int rowfrom, int rowto) {
+	if (rowfrom < a.getRows() && rowto < a.getRows()) {
+	    for (MatrixElement e : a) {
+		Vertex2i pos = e.getPosition();
+		if (pos.getY() == rowfrom) {
+		    a.set(new Vertex2i(pos.getX(), rowto), e.getValue());
+		}
+	    }
+	}
+
     }
 
 }
