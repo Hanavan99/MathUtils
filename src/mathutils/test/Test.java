@@ -1,9 +1,9 @@
-package com.mathutils.test;
+package mathutils.test;
 
 import java.math.BigDecimal;
 
-import com.mathutils.math.bigdecimal.BigDecimalMath;
-import com.mathutils.math.context.ComputeContext;
+import mathutils.math.bigdecimal.BigDecimalMath;
+import mathutils.math.context.ComputeContext;
 
 public class Test {
 

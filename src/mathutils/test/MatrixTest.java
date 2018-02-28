@@ -1,11 +1,11 @@
-package com.mathutils.test;
+package mathutils.test;
 
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.mathutils.math.matrix.Matrix;
-import com.mathutils.math.vertex.Vertex2i;
+import mathutils.math.matrix.Matrix;
+import mathutils.math.vertex.Vertex2i;
 
 public class MatrixTest {
 

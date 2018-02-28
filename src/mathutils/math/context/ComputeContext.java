@@ -1,4 +1,4 @@
-package com.mathutils.math.context;
+package mathutils.math.context;
 
 import java.math.BigDecimal;
 import java.math.MathContext;

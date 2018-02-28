@@ -1,8 +1,8 @@
-package com.mathutils.math.matrix;
+package mathutils.math.matrix;
 
 import java.util.Iterator;
 
-import com.mathutils.math.vertex.Vertex2i;
+import mathutils.math.vertex.Vertex2i;
 
 /**
  * Represents a mathematical matrix.

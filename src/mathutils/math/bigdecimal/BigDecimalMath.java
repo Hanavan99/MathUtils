@@ -1,9 +1,9 @@
-package com.mathutils.math.bigdecimal;
+package mathutils.math.bigdecimal;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
 
-import com.mathutils.math.context.ComputeContext;
+import mathutils.math.context.ComputeContext;
 
 /**
  * This class adds functionality to the {@code BigDecimal} class. Specifically

@@ -1,6 +1,6 @@
-package com.mathutils.math.matrix;
+package mathutils.math.matrix;
 
-import com.mathutils.math.vertex.Vertex2i;
+import mathutils.math.vertex.Vertex2i;
 
 /**
  * Performs functions such as matrix math and matrix creation.
