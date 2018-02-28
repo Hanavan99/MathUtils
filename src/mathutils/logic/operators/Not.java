@@ -1,6 +1,9 @@
-package mathutils.logic;
+package mathutils.logic.operators;
 
 import java.util.HashMap;
+
+import mathutils.logic.LogicExpression;
+import mathutils.logic.UnaryOperator;
 
 public class Not extends UnaryOperator {
 

@@ -1,6 +1,9 @@
-package mathutils.logic;
+package mathutils.logic.operators;
 
 import java.util.HashMap;
+
+import mathutils.logic.BinaryOperator;
+import mathutils.logic.LogicExpression;
 
 public class And extends BinaryOperator {
 

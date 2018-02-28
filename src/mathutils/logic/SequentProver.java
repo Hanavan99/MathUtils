@@ -1,6 +1,9 @@
 package mathutils.logic;
 
 import mathutils.logic.Deduction.DedRule;
+import mathutils.logic.operators.And;
+import mathutils.logic.operators.Implies;
+import mathutils.logic.operators.Or;
 
 /**
  * This class uses natural deduction to determine if either two sequents are
@@ -100,7 +103,7 @@ public class SequentProver {
 	 * @return whether or not it was successful in determining new knowledge
 	 */
 	private boolean solve(Proof proof, LogicExpression current) {
-		if (!(current instanceof Input)) {
+		if (!(current instanceof BoolInput)) {
 			for (LogicExpression ex : current) {
 				buildUp(proof, ex);
 			}
@@ -109,7 +112,7 @@ public class SequentProver {
 	}
 
 	private boolean buildUp(Proof proof, LogicExpression ex) {
-		if (!(ex instanceof Input)) {
+		if (!(ex instanceof BoolInput)) {
 			if (ex instanceof BinaryOperator) {
 				BinaryOperator bo = (BinaryOperator) ex;
 				if (bo instanceof And && proof.contains(bo.getLeft()) && proof.contains(bo.getRight())) {
@@ -154,7 +157,7 @@ public class SequentProver {
 
 		} else {
 			for (LogicExpression ex2 : premises) {
-				if (!(ex2 instanceof Input)) {
+				if (!(ex2 instanceof BoolInput)) {
 					for (LogicExpression ex3 : ex2) {
 						buildUp2(proof, ex, ex3);
 					}
@@ -185,7 +188,7 @@ public class SequentProver {
 	 * @return whether or not any new information was deduced
 	 */
 	public boolean breakDown(Proof proof, LogicExpression current) {
-		if (current instanceof Input) {
+		if (current instanceof BoolInput) {
 			return true;
 		}
 		if (current instanceof BinaryOperator) {

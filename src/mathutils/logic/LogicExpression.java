@@ -2,6 +2,11 @@ package mathutils.logic;
 
 import java.util.HashMap;
 
+import mathutils.logic.operators.And;
+import mathutils.logic.operators.Implies;
+import mathutils.logic.operators.Not;
+import mathutils.logic.operators.Or;
+
 /**
  * Represents a logic expression using standard logical operators.
  * 

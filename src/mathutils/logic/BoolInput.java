@@ -3,11 +3,11 @@ package mathutils.logic;
 import java.util.HashMap;
 import java.util.Iterator;
 
-public class Input extends LogicExpression {
+public class BoolInput extends LogicExpression {
 
 	private char name;
 
-	public Input(char name) {
+	public BoolInput(char name) {
 		this.name = name;
 	}
 
@@ -29,7 +29,7 @@ public class Input extends LogicExpression {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof Input && ((Input) other).name == name;
+		return other instanceof BoolInput && ((BoolInput) other).name == name;
 	}
 
 	@Override
