@@ -14,17 +14,19 @@ import mathutils.util.UnhashMap;
  * @author Hanavan Kuhn
  *
  */
-public class Proof implements Iterable<Proof> {
+public class Proof implements Iterable<Proof>, Cloneable {
 
 	private ArrayList<Proof> proofs = new ArrayList<Proof>();
 	private LogicExpression step;
 	private Deduction rule;
+	private int id = 0;
 
 	/**
 	 * Constructs a new proof. Proofs constructed this way act as tree nodes.
 	 */
 	public Proof() {
 		step = null;
+		rule = null;
 	}
 
 	/**
@@ -39,6 +41,15 @@ public class Proof implements Iterable<Proof> {
 	public Proof(LogicExpression step, Deduction rule) {
 		this.step = step;
 		this.rule = rule;
+	}
+	
+	private Proof(LogicExpression step, Deduction rule, int id) {
+		this(step, rule);
+		this.id = id;
+	}
+	
+	public Proof createSimilar() {
+		return new Proof(step, rule, id + 1);
 	}
 
 	/**
@@ -73,6 +84,36 @@ public class Proof implements Iterable<Proof> {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Tries to find a sub-proof that has the specified start and end expressions.
+	 * 
+	 * @param start
+	 *            the starting expression
+	 * @param end
+	 *            the ending expression
+	 * @return the sub proof, or {@code null} if none was found
+	 */
+	public Proof getProof(LogicExpression start, LogicExpression end) {
+		Map<Proof, Integer> map = toMap();
+		for (Proof p : map.keySet()) {
+			if (p != null && !p.isLeaf() && p.getFirstProof().getStep().equals(start)
+					&& p.getLastProof().getStep().equals(end)) {
+				return p;
+			}
+		}
+		return null;
+	}
+
+	public Proof getProof(LogicExpression step) {
+		Map<Proof, Integer> map = toMap();
+		for (Proof p : map.keySet()) {
+			if (p != null && p.isLeaf() && p.getStep().equals(step)) {
+				return p;
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -135,16 +176,21 @@ public class Proof implements Iterable<Proof> {
 
 		} : new Iterator<Proof>() {
 
+			private boolean meDone = false;
 			private int index = 0;
 			private Iterator<Proof> curItr;
 
 			@Override
 			public boolean hasNext() {
-				return index < proofs.size();
+				return index < proofs.size() || isLeaf();
 			}
 
 			@Override
 			public Proof next() {
+				if (!meDone) {
+					meDone = true;
+					return Proof.this;
+				}
 				while (hasNext()) {
 					if (curItr == null) {
 						curItr = proofs.get(index).iterator();
@@ -171,13 +217,24 @@ public class Proof implements Iterable<Proof> {
 	 */
 	public Map<Proof, Integer> toMap() {
 		UnhashMap<Proof, Integer> map = new UnhashMap<Proof, Integer>();
-		int index = 1;
+		int index = 0;
 		for (Proof p : this) {
-			if (p != null) {
+			if (p != null && !map.containsKey(p)) {
 				map.put(p, index++);
 			}
 		}
 		return map;
+	}
+
+	/**
+	 * Gets the first {@code Proof} object in this proof. If it is a leaf,
+	 * {@code this} is returned, and if not, the first {@code Proof} contained by
+	 * this proof is returned.
+	 * 
+	 * @return the first proof in this {@code Proof}
+	 */
+	public Proof getFirstProof() {
+		return isLeaf() ? this : proofs.get(0);
 	}
 
 	/**
@@ -195,7 +252,7 @@ public class Proof implements Iterable<Proof> {
 	public boolean equals(Object other) {
 		if (other instanceof Proof) {
 			if (isLeaf()) {
-				return ((Proof) other).isLeaf() && ((Proof) other).step.equals(step);
+				return ((Proof) other).isLeaf() && ((Proof) other).step.equals(step) && ((Proof) other).id == id;
 			} else {
 				return ((Proof) other).proofs != null && ((Proof) other).proofs.equals(proofs);
 			}
@@ -219,8 +276,14 @@ public class Proof implements Iterable<Proof> {
 		if (isLeaf()) {
 			String str = spacer(indent) + map.get(this) + ". " + step;
 			String rstr = rule.getRule().getRuleName();
-			for (LogicExpression s : rule.getSteps()) {
-				rstr += " " + map.get(new Proof(s, null));
+			if (rule.getSteps() != null) {
+				for (LogicExpression s : rule.getSteps()) {
+					rstr += " " + map.get(new Proof(s, null));
+				}
+			} else if (rule.getProofSteps() != null) {
+				for (Proof p : rule.getProofSteps()) {
+					rstr += " " + map.get(p);
+				}
 			}
 			return str + spacer(50 - str.length()) + rstr;
 		}
@@ -229,12 +292,17 @@ public class Proof implements Iterable<Proof> {
 			if (p.isLeaf()) {
 				sb.append(p.toString(map, indent) + "\n");
 			} else {
-				sb.append(spacer(indent) + map.get(p) + "{\n");
-				sb.append(toString(map, indent + 5) + "\n");
-				sb.append(spacer(indent) + "}\n");
+				sb.append(spacer(indent) + map.get(p) + ". {\n");
+				sb.append(p.toString(map, indent + 5) + "\n");
+				sb.setLength(sb.length() - 1);
+				sb.append(spacer(indent + 3) + "}\n");
 			}
 		}
 		return sb.toString();
+	}
+
+	public void removeDuplicates() {
+
 	}
 
 	/**

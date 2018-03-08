@@ -1,31 +1,56 @@
 package mathutils.expression;
 
-public class Constant extends Expression {
+import java.util.HashMap;
+import java.util.Iterator;
 
-	private double value;
-	
-	public Constant(double value) {
+import mathutils.number.Number;
+import mathutils.number.RealNumber;
+import mathutils.number.WholeNumber;
+
+public class Constant extends MathExpression {
+
+	private Number value;
+
+	public Constant(int n) {
+		value = new WholeNumber(n);
+	}
+
+	public Constant(double n) {
+		value = new RealNumber(n);
+	}
+
+	public Constant(Number value) {
 		this.value = value;
 	}
-	
-	@Override
-	public boolean isLeaf() {
-		return true;
-	}
 
 	@Override
-	public Expression evaluate(VariableList vars) {
+	public Iterator<MathExpression> iterator() {
 		return null;
 	}
 
 	@Override
-	public double evaluate() {
+	public Number evaluate(HashMap<Character, Number> vars) throws IllegalArgumentException {
 		return value;
 	}
 
 	@Override
-	public String toString(VariableList vars) {
-		return String.valueOf(value);
+	public String toString() {
+		return value.toString();
+	}
+
+	@Override
+	public String toString(HashMap<Character, Number> vars) {
+		return value.toString();
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		return value.equals(other);
+	}
+
+	@Override
+	public MathExpression simplify(HashMap<Character, Number> vars) {
+		return this;
 	}
 
 }
