@@ -5,8 +5,8 @@ public class Deduction {
 	public enum DedRule {
 
 		PREMISE("premise", 0), ASSUME("assume", 0), AND_INTRO("^i", 3), AND_ELIM1("^e1", 1), AND_ELIM2("^e2",
-				1), OR_INTRO_1("Vi1", 1), OR_INTRO_2("Vi2", 2), OR_ELIM("Ve",
-						3), IMPLIES_INTRO("->i", 1), IMPLIES_ELIM("->e", 1), NOT_ELIM("~e", 2), BOTTOM_ELIM("_|_e", 1);
+				1), OR_INTRO_1("Vi1", 1), OR_INTRO_2("Vi2", 2), OR_ELIM("Ve", 3), IMPLIES_INTRO("->i", 1), IMPLIES_ELIM(
+						"->e", 1), NOT_INTRO("~i", 1), NOT_ELIM("~e", 2), BOTTOM_ELIM("_|_e", 1), PBC("pbc", 1);
 
 		private String ruleName;
 		private int args;

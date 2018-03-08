@@ -28,8 +28,8 @@ public class Test {
 		BoolInput s = new BoolInput('s');
 
 		SequentProver sp = new SequentProver();
-		sp.setPremises(p.and(q).and(r).or(s));
-		sp.setConclusion(p.or(s).and(q.or(s)).and(r.or(s)));
+		sp.setPremises(p.or(q), r);
+		sp.setConclusion(p.and(r).or(q.and(r)));
 		System.out.println(sp.getProof());
 	}
 

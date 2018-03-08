@@ -139,11 +139,11 @@ public class SequentProver {
 	 */
 	private boolean prove(Proof proof, Proof subProof, LogicExpression assume, LogicExpression conclusion) {
 		// check if we already have that knowledge
-		// if (proof.contains(assume)) {
-		// subProof.addProof(proof.getProof(assume).createSimilar());
-		// }
 		if (proof.contains(conclusion)) {
 			subProof.addProof(proof.getProof(conclusion).createSimilar());
+			return true;
+		} else if (subProof.contains(conclusion)) {
+			subProof.addProof(subProof.getProof(conclusion).createSimilar());
 			return true;
 		}
 
@@ -153,39 +153,59 @@ public class SequentProver {
 			if (bo instanceof And) { // try and break apart the ^
 				subProof.addProof(new Proof(bo.getLeft(), new Deduction(DedRule.AND_ELIM1, bo)));
 				subProof.addProof(new Proof(bo.getRight(), new Deduction(DedRule.AND_ELIM2, bo)));
-				return prove(proof, subProof, bo.getLeft(), conclusion)
-						|| prove(proof, subProof, bo.getRight(), conclusion);
+				return (bo.getLeft().equals(conclusion) || bo.getRight().equals(conclusion)) ? true
+						: (prove(proof, subProof, bo.getLeft(), conclusion)
+								|| prove(proof, subProof, bo.getRight(), conclusion));
 			} else if (bo instanceof Or) {
 				Proof sub1 = new Proof();
-				sub1.addProof(new Proof(bo.getLeft(), new Deduction(DedRule.ASSUME)));
-				
+				sub1.addProof(new Proof(bo.getLeft(), new Deduction(DedRule.ASSUME)).createSimilar());
+
 				Proof sub2 = new Proof();
-				sub2.addProof(new Proof(bo.getRight(), new Deduction(DedRule.ASSUME)));
-				
+				sub2.addProof(new Proof(bo.getRight(), new Deduction(DedRule.ASSUME)).createSimilar());
+
 				if (prove(proof, sub1, bo.getLeft(), conclusion) && prove(proof, sub2, bo.getLeft(), conclusion)) {
-					proof.addProof(sub1);
-					proof.addProof(sub2);
-					proof.addProof(new Proof(conclusion, new Deduction(DedRule.OR_ELIM, proof.getProof(bo), sub1, sub2)));
+					subProof.addProof(sub1);
+					subProof.addProof(sub2);
+					subProof.addProof(
+							new Proof(conclusion, new Deduction(DedRule.OR_ELIM, proof.getProof(bo), sub1, sub2)));
 					return true;
 				}
 			} else if (bo instanceof Implies && prove(proof, subProof, bo.getLeft(), bo.getLeft())) {
 				subProof.addProof(new Proof(bo.getRight(), new Deduction(DedRule.IMPLIES_ELIM, bo, bo.getLeft())));
-				return prove(proof, subProof, bo.getRight(), conclusion);
+				return bo.equals(conclusion) ? true : prove(proof, subProof, bo.getRight(), conclusion);
 			}
 		} else if (assume instanceof UnaryOperator) {
-
+			UnaryOperator uo = (UnaryOperator) assume;
+			if (uo instanceof Not && (proof.contains(uo.getExpression()) || subProof.contains(uo.getExpression()))) {
+				subProof.addProof(new Proof(new Bottom(), new Deduction(DedRule.NOT_ELIM, uo.getExpression(), uo)));
+				return uo.equals(conclusion) ? true : prove(proof, subProof, new Bottom(), conclusion);
+			}
 		} else if (assume instanceof BoolInput) {
 			// try to see if there is anything we can break down from here
-			/*
-			 * for (Proof p : proof) { LogicExpression ex = p != null ? p.getStep() : null;
-			 * if (ex != null) { if (ex instanceof BinaryOperator) { BinaryOperator bo2 =
-			 * (BinaryOperator) ex; if (bo2 instanceof Implies &&
-			 * (proof.contains(bo2.getLeft()))) { subProof.addProof(new Proof(bo2, new
-			 * Deduction(DedRule.IMPLIES_ELIM, bo2, bo2.getLeft()))); return prove(proof,
-			 * subProof, bo2, conclusion); } } }
-			 * 
-			 * }
-			 */
+			
+			for (Proof p : proof) {
+				LogicExpression ex = p != null ? p.getStep() : null;
+				if (ex != null) {
+					if (ex instanceof BinaryOperator) {
+						BinaryOperator bo2 = (BinaryOperator) ex;
+						if (bo2 instanceof Implies && (proof.contains(bo2.getLeft()) || subProof.contains(bo2.getLeft()) || assume.equals(bo2.getLeft()))) {
+							subProof.addProof(new Proof(bo2.getRight(), new Deduction(DedRule.IMPLIES_ELIM, bo2, bo2.getLeft())));
+							return prove(proof, subProof, bo2.getRight(), conclusion);
+						}
+					} else if (ex instanceof UnaryOperator) {
+						UnaryOperator uo2 = (UnaryOperator) ex;
+						if (uo2 instanceof Not && (proof.contains(uo2.getExpression()) || subProof.contains(uo2.getExpression()))) {
+							subProof.addProof(new Proof(new Bottom(), new Deduction(DedRule.NOT_ELIM, uo2.getExpression(), uo2)));
+							return uo2.equals(conclusion) ? true : prove(proof, subProof, new Bottom(), conclusion);
+						}
+					}
+				}
+
+			}
+
+		} else if (assume instanceof Bottom) {
+			subProof.addProof(new Proof(conclusion, new Deduction(DedRule.BOTTOM_ELIM, new Bottom())));
+			return true;
 		}
 
 		// now try to build up the conclusion
@@ -195,28 +215,38 @@ public class SequentProver {
 				if (prove(proof, subProof, bo2.getLeft(), bo2.getLeft())
 						&& prove(proof, subProof, bo2.getRight(), bo2.getRight())) {
 					subProof.addProof(new Proof(bo2, new Deduction(DedRule.AND_INTRO, bo2.getLeft(), bo2.getRight())));
-					return prove(proof, subProof, bo2, conclusion);
+					return bo2.equals(conclusion) ? true : prove(proof, subProof, bo2, conclusion);
 				}
 			} else if (bo2 instanceof Or) {
 				if (proof.contains(bo2.getLeft()) || subProof.contains(bo2.getLeft())
 						|| prove(proof, subProof, bo2.getLeft(), bo2.getLeft())) {
 					subProof.addProof(new Proof(bo2, new Deduction(DedRule.OR_INTRO_1, bo2.getLeft())));
 					System.out.println(bo2.getLeft());
-					return prove(proof, subProof, bo2.getLeft(), conclusion);
+					return bo2.equals(conclusion) ? true : prove(proof, subProof, bo2.getLeft(), conclusion);
 				} else if (proof.contains(bo2.getRight()) || subProof.contains(bo2.getRight())
 						|| prove(proof, subProof, bo2.getRight(), bo2.getRight())) {
 					subProof.addProof(new Proof(bo2, new Deduction(DedRule.OR_INTRO_2, bo2.getRight())));
-					return prove(proof, subProof, bo2.getRight(), conclusion);
+					return bo2.equals(conclusion) ? true : prove(proof, subProof, bo2.getRight(), conclusion);
 				}
 			} else if (bo2 instanceof Implies) {
 				Proof sub = new Proof();
-				sub.addProof(new Proof(bo2.getLeft(), new Deduction(DedRule.ASSUME)));
+				sub.addProof(new Proof(bo2.getLeft(), new Deduction(DedRule.ASSUME)).createSimilar());
 				if (prove(proof, sub, bo2.getLeft(), bo2.getRight())) {
 					subProof.addProof(sub);
 					subProof.addProof(new Proof(bo2, new Deduction(DedRule.IMPLIES_INTRO, sub)));
-					return prove(proof, subProof, bo2, conclusion);
+					return bo2.equals(conclusion) ? true : prove(proof, subProof, bo2, conclusion);
 				}
-				return false;
+			}
+		} else if (conclusion instanceof UnaryOperator) {
+			UnaryOperator uo2 = (UnaryOperator) conclusion;
+			if (uo2 instanceof Not) {
+				Proof sub = new Proof();
+				sub.addProof(new Proof(uo2.getExpression(), new Deduction(DedRule.ASSUME)));
+				if (prove(proof, sub, uo2.getExpression(), new Bottom())) {
+					subProof.addProof(sub);
+					subProof.addProof(new Proof(uo2, new Deduction(DedRule.NOT_INTRO, sub)));
+					return uo2.equals(conclusion) ? true : prove(proof, subProof, uo2, conclusion);
+				}
 			}
 		}
 
