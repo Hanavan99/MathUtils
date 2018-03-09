@@ -62,6 +62,19 @@ public class SequentProver {
 	}
 
 	/**
+	 * Quick way to set the premises and conclusion in one method call.
+	 * 
+	 * @param conclusion
+	 *            the conclusion
+	 * @param premises
+	 *            the premises
+	 */
+	public void set(LogicExpression conclusion, LogicExpression... premises) {
+		setConclusion(conclusion);
+		setPremises(premises);
+	}
+
+	/**
 	 * Generates a string that has all of the deduction steps required to prove the
 	 * conclusion using the premises. The outputted format is in Logika format, so
 	 * taking the output directly into Logika requires no modification. By default,
@@ -93,6 +106,19 @@ public class SequentProver {
 		sb.append("}\n");
 		return sb.toString();
 	}
+	
+	public boolean hasProof() {
+		Proof proof = new Proof();
+		for (LogicExpression premise : premises) {
+			proof.addStep(premise, new Deduction(DedRule.PREMISE));
+		}
+		for (LogicExpression premise : premises) {
+			if (prove(proof, proof, premise, conclusion)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	public String getProof() {
 		StringBuilder sb = new StringBuilder();
@@ -120,6 +146,11 @@ public class SequentProver {
 		sb.append(proof.toString(proof.toMap(), 2) + "}");
 		return sb.toString();
 	}
+	
+	public boolean prove(LogicExpression start, LogicExpression end) {
+		Proof proof = new Proof();
+		return prove(proof, proof, start, end);
+	}
 
 	/**
 	 * Tries to prove that the logic expression {@code assume} is logically
@@ -129,33 +160,33 @@ public class SequentProver {
 	 *            the main proof that contains all of the deduction steps
 	 * @param subProof
 	 *            the current subProof to add steps to, or if proving the main proof
-	 *            pass in {@code proof}
-	 * @param assume
-	 *            the assumption to be made, or a premise
-	 * @param conclusion
-	 *            the conclusion to try to prove
+	 *            pass in the same value for {@code proof}
+	 * @param start
+	 *            the assumption to be made, premise, or current knowledge
+	 * @param end
+	 *            the end result we want
 	 * @return whether or not the logical equivalence between the assumption and
 	 *         conclusion was provable
 	 */
-	private boolean prove(Proof proof, Proof subProof, LogicExpression assume, LogicExpression conclusion) {
+	public boolean prove(Proof proof, Proof subProof, LogicExpression start, LogicExpression end) {
 		// check if we already have that knowledge
-		if (proof.contains(conclusion)) {
-			subProof.addProof(proof.getProof(conclusion).createSimilar());
+		if (proof.contains(end)) {
+			subProof.addProof(proof.getProof(end).createSimilar());
 			return true;
-		} else if (subProof.contains(conclusion)) {
-			subProof.addProof(subProof.getProof(conclusion).createSimilar());
+		} else if (subProof.contains(end)) {
+			subProof.addProof(subProof.getProof(end).createSimilar());
+			return true;
+		} else if (start.equals(end)) {
 			return true;
 		}
 
 		// first try to break down the assumption
-		if (assume instanceof BinaryOperator) {
-			BinaryOperator bo = (BinaryOperator) assume;
+		if (start instanceof BinaryOperator) {
+			BinaryOperator bo = (BinaryOperator) start;
 			if (bo instanceof And) { // try and break apart the ^
 				subProof.addProof(new Proof(bo.getLeft(), new Deduction(DedRule.AND_ELIM1, bo)));
 				subProof.addProof(new Proof(bo.getRight(), new Deduction(DedRule.AND_ELIM2, bo)));
-				return (bo.getLeft().equals(conclusion) || bo.getRight().equals(conclusion)) ? true
-						: (prove(proof, subProof, bo.getLeft(), conclusion)
-								|| prove(proof, subProof, bo.getRight(), conclusion));
+				return (prove(proof, subProof, bo.getLeft(), end) || prove(proof, subProof, bo.getRight(), end));
 			} else if (bo instanceof Or) {
 				Proof sub1 = new Proof();
 				sub1.addProof(new Proof(bo.getLeft(), new Deduction(DedRule.ASSUME)).createSimilar());
@@ -163,70 +194,72 @@ public class SequentProver {
 				Proof sub2 = new Proof();
 				sub2.addProof(new Proof(bo.getRight(), new Deduction(DedRule.ASSUME)).createSimilar());
 
-				if (prove(proof, sub1, bo.getLeft(), conclusion) && prove(proof, sub2, bo.getLeft(), conclusion)) {
+				if (prove(proof, sub1, bo.getLeft(), end) && prove(proof, sub2, bo.getLeft(), end)) {
 					subProof.addProof(sub1);
 					subProof.addProof(sub2);
-					subProof.addProof(
-							new Proof(conclusion, new Deduction(DedRule.OR_ELIM, proof.getProof(bo), sub1, sub2)));
+					subProof.addProof(new Proof(end, new Deduction(DedRule.OR_ELIM, proof.getProof(bo), sub1, sub2)));
 					return true;
 				}
 			} else if (bo instanceof Implies && prove(proof, subProof, bo.getLeft(), bo.getLeft())) {
 				subProof.addProof(new Proof(bo.getRight(), new Deduction(DedRule.IMPLIES_ELIM, bo, bo.getLeft())));
-				return bo.equals(conclusion) ? true : prove(proof, subProof, bo.getRight(), conclusion);
+				return prove(proof, subProof, bo.getRight(), end);
 			}
-		} else if (assume instanceof UnaryOperator) {
-			UnaryOperator uo = (UnaryOperator) assume;
+		} else if (start instanceof UnaryOperator) {
+			UnaryOperator uo = (UnaryOperator) start;
 			if (uo instanceof Not && (proof.contains(uo.getExpression()) || subProof.contains(uo.getExpression()))) {
 				subProof.addProof(new Proof(new Bottom(), new Deduction(DedRule.NOT_ELIM, uo.getExpression(), uo)));
-				return uo.equals(conclusion) ? true : prove(proof, subProof, new Bottom(), conclusion);
+				return prove(proof, subProof, new Bottom(), end);
 			}
-		} else if (assume instanceof BoolInput) {
+		} else if (start instanceof BoolInput) {
 			// try to see if there is anything we can break down from here
-			
+
 			for (Proof p : proof) {
 				LogicExpression ex = p != null ? p.getStep() : null;
 				if (ex != null) {
 					if (ex instanceof BinaryOperator) {
 						BinaryOperator bo2 = (BinaryOperator) ex;
-						if (bo2 instanceof Implies && (proof.contains(bo2.getLeft()) || subProof.contains(bo2.getLeft()) || assume.equals(bo2.getLeft()))) {
-							subProof.addProof(new Proof(bo2.getRight(), new Deduction(DedRule.IMPLIES_ELIM, bo2, bo2.getLeft())));
-							return prove(proof, subProof, bo2.getRight(), conclusion);
+						if (bo2 instanceof Implies && (proof.contains(bo2.getLeft()) || subProof.contains(bo2.getLeft())
+								|| start.equals(bo2.getLeft()))) {
+							subProof.addProof(
+									new Proof(bo2.getRight(), new Deduction(DedRule.IMPLIES_ELIM, bo2, bo2.getLeft())));
+							return prove(proof, subProof, bo2.getRight(), end);
 						}
 					} else if (ex instanceof UnaryOperator) {
 						UnaryOperator uo2 = (UnaryOperator) ex;
-						if (uo2 instanceof Not && (proof.contains(uo2.getExpression()) || subProof.contains(uo2.getExpression()))) {
-							subProof.addProof(new Proof(new Bottom(), new Deduction(DedRule.NOT_ELIM, uo2.getExpression(), uo2)));
-							return uo2.equals(conclusion) ? true : prove(proof, subProof, new Bottom(), conclusion);
+						if (uo2 instanceof Not
+								&& (proof.contains(uo2.getExpression()) || subProof.contains(uo2.getExpression()))) {
+							subProof.addProof(
+									new Proof(new Bottom(), new Deduction(DedRule.NOT_ELIM, uo2.getExpression(), uo2)));
+							return prove(proof, subProof, new Bottom(), end);
 						}
 					}
 				}
 
 			}
 
-		} else if (assume instanceof Bottom) {
-			subProof.addProof(new Proof(conclusion, new Deduction(DedRule.BOTTOM_ELIM, new Bottom())));
+		} else if (start instanceof Bottom) {
+			subProof.addProof(new Proof(end, new Deduction(DedRule.BOTTOM_ELIM, new Bottom())));
 			return true;
 		}
 
 		// now try to build up the conclusion
-		if (conclusion instanceof BinaryOperator) {
-			BinaryOperator bo2 = (BinaryOperator) conclusion;
+		if (end instanceof BinaryOperator) {
+			BinaryOperator bo2 = (BinaryOperator) end;
 			if (bo2 instanceof And) {
 				if (prove(proof, subProof, bo2.getLeft(), bo2.getLeft())
 						&& prove(proof, subProof, bo2.getRight(), bo2.getRight())) {
 					subProof.addProof(new Proof(bo2, new Deduction(DedRule.AND_INTRO, bo2.getLeft(), bo2.getRight())));
-					return bo2.equals(conclusion) ? true : prove(proof, subProof, bo2, conclusion);
+					return prove(proof, subProof, bo2, end);
 				}
 			} else if (bo2 instanceof Or) {
 				if (proof.contains(bo2.getLeft()) || subProof.contains(bo2.getLeft())
 						|| prove(proof, subProof, bo2.getLeft(), bo2.getLeft())) {
 					subProof.addProof(new Proof(bo2, new Deduction(DedRule.OR_INTRO_1, bo2.getLeft())));
-					System.out.println(bo2.getLeft());
-					return bo2.equals(conclusion) ? true : prove(proof, subProof, bo2.getLeft(), conclusion);
+					return prove(proof, subProof, bo2.getLeft(), end);
 				} else if (proof.contains(bo2.getRight()) || subProof.contains(bo2.getRight())
 						|| prove(proof, subProof, bo2.getRight(), bo2.getRight())) {
 					subProof.addProof(new Proof(bo2, new Deduction(DedRule.OR_INTRO_2, bo2.getRight())));
-					return bo2.equals(conclusion) ? true : prove(proof, subProof, bo2.getRight(), conclusion);
+					return prove(proof, subProof, bo2.getRight(), end);
 				}
 			} else if (bo2 instanceof Implies) {
 				Proof sub = new Proof();
@@ -234,18 +267,18 @@ public class SequentProver {
 				if (prove(proof, sub, bo2.getLeft(), bo2.getRight())) {
 					subProof.addProof(sub);
 					subProof.addProof(new Proof(bo2, new Deduction(DedRule.IMPLIES_INTRO, sub)));
-					return bo2.equals(conclusion) ? true : prove(proof, subProof, bo2, conclusion);
+					return prove(proof, subProof, bo2, end);
 				}
 			}
-		} else if (conclusion instanceof UnaryOperator) {
-			UnaryOperator uo2 = (UnaryOperator) conclusion;
+		} else if (end instanceof UnaryOperator) {
+			UnaryOperator uo2 = (UnaryOperator) end;
 			if (uo2 instanceof Not) {
 				Proof sub = new Proof();
 				sub.addProof(new Proof(uo2.getExpression(), new Deduction(DedRule.ASSUME)));
 				if (prove(proof, sub, uo2.getExpression(), new Bottom())) {
 					subProof.addProof(sub);
 					subProof.addProof(new Proof(uo2, new Deduction(DedRule.NOT_INTRO, sub)));
-					return uo2.equals(conclusion) ? true : prove(proof, subProof, uo2, conclusion);
+					return prove(proof, subProof, uo2, end);
 				}
 			}
 		}

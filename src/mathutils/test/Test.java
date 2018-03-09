@@ -10,15 +10,32 @@ import mathutils.expression.MathExpression;
 import mathutils.expression.Multiply;
 import mathutils.expression.Variable;
 import mathutils.logic.BoolInput;
+import mathutils.logic.LogicExpression;
 import mathutils.logic.SequentProver;
 import mathutils.number.Number;
 import mathutils.number.WholeNumber;
+import mathutils.parser.BinaryFunction;
+import mathutils.parser.ParserOperator;
 
 public class Test {
 
 	public static void main(String[] args) {
 		testLogic();
 		// testMath();
+	}
+
+	public static void testParser() {
+		ParserOperator<LogicExpression> and = new ParserOperator<LogicExpression>('^') {
+
+			@Override
+			public LogicExpression assemble(LogicExpression left, LogicExpression right) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			
+
+		};
 	}
 
 	public static void testLogic() {
@@ -28,8 +45,8 @@ public class Test {
 		BoolInput s = new BoolInput('s');
 
 		SequentProver sp = new SequentProver();
-		sp.setPremises(p.or(q), r);
-		sp.setConclusion(p.and(r).or(q.and(r)));
+		sp.setPremises(p.and(q).not());
+		sp.setConclusion(p.not().or(q.not()));
 		System.out.println(sp.getProof());
 	}
 
