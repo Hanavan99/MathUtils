@@ -20,8 +20,8 @@ public class DefIntegral extends Integral {
 	}
 
 	@Override
-	public MathExpression simplify(HashMap<Character, mathutils.number.Number> vars) {
-		return super.simplify(vars);
+	public MathExpression simplify() {
+		return super.simplify();
 	}
 
 	@Override

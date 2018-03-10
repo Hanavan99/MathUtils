@@ -1,8 +1,11 @@
 package mathutils.expression;
 
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import mathutils.core.DrawProperties;
 import mathutils.number.Number;
 import mathutils.number.RealNumber;
 import mathutils.number.WholeNumber;
@@ -49,8 +52,16 @@ public class Constant extends MathExpression {
 	}
 
 	@Override
-	public MathExpression simplify(HashMap<Character, Number> vars) {
+	public MathExpression simplify() {
 		return this;
+	}
+
+	@Override
+	public Rectangle draw(Graphics2D g, DrawProperties props, int x, int y) {
+		int strWidth = g.getFontMetrics().stringWidth(this.toString());
+		int height = g.getFontMetrics().getHeight();
+		g.drawString(this.toString(), x, y);
+		return new Rectangle(x, y, strWidth, height);
 	}
 
 }

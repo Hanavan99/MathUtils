@@ -1,10 +1,20 @@
 package mathutils.test;
 
-import java.util.ArrayList;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.HashMap;
 
+import javax.imageio.ImageIO;
+
+import mathutils.core.DrawProperties;
 import mathutils.expression.Add;
 import mathutils.expression.Constant;
+import mathutils.expression.Divide;
+import mathutils.expression.Exponent;
 import mathutils.expression.Integral;
 import mathutils.expression.MathExpression;
 import mathutils.expression.Multiply;
@@ -14,14 +24,13 @@ import mathutils.logic.LogicExpression;
 import mathutils.logic.SequentProver;
 import mathutils.number.Number;
 import mathutils.number.WholeNumber;
-import mathutils.parser.BinaryFunction;
 import mathutils.parser.ParserOperator;
 
 public class Test {
 
 	public static void main(String[] args) {
-		testLogic();
-		// testMath();
+		// testLogic();
+		testMath();
 	}
 
 	public static void testParser() {
@@ -32,8 +41,6 @@ public class Test {
 				// TODO Auto-generated method stub
 				return null;
 			}
-
-			
 
 		};
 	}
@@ -52,31 +59,34 @@ public class Test {
 
 	public static void testMath() {
 		HashMap<Character, Number> vars = new HashMap<Character, Number>();
-		vars.put('x', new WholeNumber(5));
 
 		MathExpression sum = new Add(new Constant(3), new Multiply(new Constant(2), new Variable('x')));
 		System.out.println(sum);
-		System.out.println(sum.toString(vars));
-		sum = new Integral(new Variable('x'), 'x');
-		System.out.println(sum);
-		ArrayList<MathExpression> simplify = reduce(sum, vars);
-		int i = 1;
-		for (MathExpression ex : simplify) {
-			System.out.println(i++ + ": " + ex);
-		}
-	}
+		// System.out.println(sum.simplify());
+		sum = new Integral(new Add(new Exponent(new Variable('x'), new Constant(2)), new Add(new Variable('x'), new Divide(new Constant(1), new Constant(2)))), 'x');
 
-	public static ArrayList<MathExpression> reduce(MathExpression expression, HashMap<Character, Number> vars) {
-		ArrayList<MathExpression> steps = new ArrayList<MathExpression>();
-		steps.add(expression);
-		MathExpression last = null;
-		MathExpression current = expression.clone();
-		while (current != null && !current.equals(last) && !(current instanceof Constant)) {
-			current = current.simplify(vars);
-			steps.add(current);
-			last = current;
+		BufferedImage img = new BufferedImage(512, 512, BufferedImage.TYPE_INT_RGB);
+		DrawProperties props = new DrawProperties();
+		props.setDefaultFont(new Font("Cambria Math", Font.PLAIN, 64));
+		props.setSmallFont(new Font("Cambria Math", Font.PLAIN, 48));
+		Graphics2D g = (Graphics2D) img.getGraphics();
+		g.setColor(Color.WHITE);
+		g.fillRect(0, 0, img.getWidth(), img.getHeight());
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		
+		g.setColor(Color.BLACK);
+
+		// g.drawString("TEST", 100, 100);
+		sum.draw(g, props, 50, 256);
+		try {
+			ImageIO.write(img, "png", new File("expression.png"));
+		} catch (Exception e) {
+
 		}
-		return steps;
+		System.out.println(sum = sum.simplify());
+		vars.put('x', new WholeNumber(5));
+		System.out.println(sum.evaluate(vars));
+
 	}
 
 }

@@ -20,4 +20,9 @@ public class Add extends BinaryOperator {
 		return "(" + getLeft().toString(vars) + " + " + getRight().toString(vars) + ")";
 	}
 
+	@Override
+	public char getOperatorChar() {
+		return '+';
+	}
+
 }

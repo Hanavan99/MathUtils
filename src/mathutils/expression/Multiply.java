@@ -20,4 +20,9 @@ public class Multiply extends BinaryOperator {
 		return "(" + getLeft().toString(vars) + " * " + getRight().toString(vars) + ")";
 	}
 
+	@Override
+	public char getOperatorChar() {
+		return '\u22C5';
+	}
+
 }

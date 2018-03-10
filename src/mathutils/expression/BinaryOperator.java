@@ -1,8 +1,13 @@
 package mathutils.expression;
 
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.util.HashMap;
 import java.util.Iterator;
+
+import mathutils.core.DrawProperties;
 import mathutils.number.Number;
+import mathutils.util.RectangleMath;
 
 public abstract class BinaryOperator extends MathExpression {
 
@@ -62,9 +67,9 @@ public abstract class BinaryOperator extends MathExpression {
 
 	@Override
 	public final boolean equals(Object other) {
-		return other instanceof BinaryOperator && ((BinaryOperator) other).getClass().equals(this.getClass())
-				&& ((BinaryOperator) other).getLeft() != null && ((BinaryOperator) other).getLeft().equals(left)
-				&& ((BinaryOperator) other).getLeft() != null && ((BinaryOperator) other).getRight().equals(right);
+		return other instanceof BinaryOperator && ((BinaryOperator) other).getLeft() != null
+				&& ((BinaryOperator) other).getLeft().equals(left) && ((BinaryOperator) other).getLeft() != null
+				&& ((BinaryOperator) other).getRight().equals(right);
 	}
 
 	public final String toString() {
@@ -72,13 +77,23 @@ public abstract class BinaryOperator extends MathExpression {
 	}
 
 	@Override
-	public final MathExpression simplify(HashMap<Character, Number> vars) {
-		MathExpression sleft = left.simplify(vars);
-		MathExpression sright = right.simplify(vars);
-		if (sleft instanceof Constant && sright instanceof Constant) {
-			return new Constant(evaluate(vars));
-		}
+	public final MathExpression simplify() {
+		left = left.simplify();
+		right = right.simplify();
 		return this;
+	}
+	
+	public abstract char getOperatorChar();
+
+	@Override
+	public Rectangle draw(Graphics2D g, DrawProperties props, int x, int y) {
+		g.setFont(props.getDefaultFont());
+		Rectangle leftBounds = left.draw(g, props, x, y);
+		String op = String.valueOf(getOperatorChar());
+		int opWidth = g.getFontMetrics().stringWidth(op);
+		g.drawString(op, x + leftBounds.width, y);
+		Rectangle rightBounds = right.draw(g, props, x + leftBounds.width + opWidth, y);
+		return RectangleMath.findBounds(leftBounds, rightBounds);
 	}
 
 }
