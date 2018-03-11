@@ -29,8 +29,8 @@ import mathutils.parser.ParserOperator;
 public class Test {
 
 	public static void main(String[] args) {
-		// testLogic();
-		testMath();
+		testLogic();
+		// testMath();
 	}
 
 	public static void testParser() {
@@ -52,8 +52,15 @@ public class Test {
 		BoolInput s = new BoolInput('s');
 
 		SequentProver sp = new SequentProver();
-		sp.setPremises(p.and(q).not());
-		sp.setConclusion(p.not().or(q.not()));
+		sp.set(r.and(q).and(p), p.and(q.and(r)));
+		System.out.println(sp.getProof());
+		sp.set(p.or(q).or(r), p);
+		System.out.println(sp.getProof());
+		sp.set(p.or(q).and(r), p.and(r).or(q.and(r)));
+		System.out.println(sp.getProof());
+		sp.set(p.or(q.and(r)), p.or(q).and(p.or(r)));
+		System.out.println(sp.getProof());
+		sp.set(p.implies(q).implies(p.implies(r)), p.implies(q.implies(r)));
 		System.out.println(sp.getProof());
 	}
 
@@ -63,7 +70,8 @@ public class Test {
 		MathExpression sum = new Add(new Constant(3), new Multiply(new Constant(2), new Variable('x')));
 		System.out.println(sum);
 		// System.out.println(sum.simplify());
-		sum = new Integral(new Add(new Exponent(new Variable('x'), new Constant(2)), new Add(new Variable('x'), new Divide(new Constant(1), new Constant(2)))), 'x');
+		sum = new Integral(new Add(new Exponent(new Variable('x'), new Constant(2)),
+				new Add(new Variable('x'), new Divide(new Constant(1), new Constant(2)))), 'x');
 
 		BufferedImage img = new BufferedImage(512, 512, BufferedImage.TYPE_INT_RGB);
 		DrawProperties props = new DrawProperties();
@@ -73,7 +81,7 @@ public class Test {
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, img.getWidth(), img.getHeight());
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-		
+
 		g.setColor(Color.BLACK);
 
 		// g.drawString("TEST", 100, 100);

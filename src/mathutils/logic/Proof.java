@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 
+import mathutils.logic.Deduction.DedRule;
 import mathutils.util.UnhashMap;
 
 /**
@@ -29,6 +30,12 @@ public class Proof implements Iterable<Proof>, Cloneable {
 		rule = null;
 	}
 
+	public Proof(int id) {
+		step = null;
+		rule = null;
+		this.id = id;
+	}
+
 	/**
 	 * Constructs a new proof. Proofs constructed this way act as tree leaves,
 	 * meaning they do not have any children.
@@ -42,14 +49,30 @@ public class Proof implements Iterable<Proof>, Cloneable {
 		this.step = step;
 		this.rule = rule;
 	}
-	
-	private Proof(LogicExpression step, Deduction rule, int id) {
+
+	public Proof(LogicExpression step, Deduction rule, int id) {
 		this(step, rule);
 		this.id = id;
 	}
 	
+	public static Proof createSubProof() {
+		return new Proof((int) (Math.random() * Integer.MAX_VALUE));
+	}
+
 	public Proof createSimilar() {
 		return new Proof(step, rule, id + 1);
+	}
+	
+	public Proof createProofWithID(LogicExpression step) {
+		return new Proof(step, null, id);
+	}
+	
+	public Proof createProofWithID(LogicExpression result, DedRule rule, LogicExpression... steps) {
+		Proof[] psteps = new Proof[steps.length];
+		for (int i = 0; i < psteps.length; i++) {
+			psteps[i] = createProofWithID(steps[i]);
+		}
+		return new Proof(result, new Deduction(rule, psteps), id);
 	}
 
 	/**
@@ -62,7 +85,7 @@ public class Proof implements Iterable<Proof>, Cloneable {
 	 */
 	public void addStep(LogicExpression step, Deduction rule) {
 		if (!contains(step)) {
-			proofs.add(new Proof(step, rule));
+			addProof(new Proof(step, rule));
 		}
 	}
 
@@ -80,6 +103,29 @@ public class Proof implements Iterable<Proof>, Cloneable {
 		Map<Proof, Integer> map = toMap();
 		for (Proof p : map.keySet()) {
 			if (p != null && p.isLeaf() && p.getStep().equals(step)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Determines whether or not a given expression is contained in this proof AND
+	 * it has been proven concretely. This means only steps proven in this
+	 * {@code Proof} object are concretely proven, and are therefore are the only
+	 * ones provable in this context.
+	 * 
+	 * @param step
+	 *            the logic expression to look for
+	 * @return whether or not this proof contains this expression and was proven
+	 *         concretely
+	 */
+	public boolean containsProved(LogicExpression step) {
+		if (this.isLeaf()) {
+			return this.step.equals(step);
+		}
+		for (Proof p : proofs) {
+			if (p.isLeaf() && p.step.equals(step)) {
 				return true;
 			}
 		}
@@ -123,6 +169,7 @@ public class Proof implements Iterable<Proof>, Cloneable {
 	 *            the proof to add
 	 */
 	public void addProof(Proof p) {
+		p.id = id;
 		proofs.add(p);
 	}
 
@@ -144,6 +191,10 @@ public class Proof implements Iterable<Proof>, Cloneable {
 	 */
 	public Deduction getRule() {
 		return rule;
+	}
+	
+	public int getID() {
+		return id;
 	}
 
 	/**
@@ -259,6 +310,11 @@ public class Proof implements Iterable<Proof>, Cloneable {
 		}
 		return false;
 	}
+	
+	@Override
+	public String toString() {
+		return toString(toMap(), 2);
+	}
 
 	/**
 	 * Converts this {@code Proof} object into a string format. This format is
@@ -299,10 +355,6 @@ public class Proof implements Iterable<Proof>, Cloneable {
 			}
 		}
 		return sb.toString();
-	}
-
-	public void removeDuplicates() {
-
 	}
 
 	/**
