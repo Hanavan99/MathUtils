@@ -9,9 +9,9 @@ import mathutils.math.vertex.Vertex2i;
  * @author Hanavan Kuhn
  *
  */
-public class MatrixElement {
+public class MatrixElement<T> {
 
-    private double value;
+    private T value;
     private Vertex2i position;
 
     /**
@@ -22,7 +22,7 @@ public class MatrixElement {
      * @param position
      *            the position of the element in the matrix
      */
-    public MatrixElement(double value, Vertex2i position) {
+    public MatrixElement(T value, Vertex2i position) {
 	this.value = value;
 	this.position = position;
     }
@@ -30,7 +30,7 @@ public class MatrixElement {
     /**
      * @return the value of the matrix element
      */
-    public double getValue() {
+    public T getValue() {
 	return value;
     }
 
@@ -38,7 +38,7 @@ public class MatrixElement {
      * @param value
      *            the value to set
      */
-    public void setValue(double value) {
+    public void setValue(T value) {
 	this.value = value;
     }
 

@@ -4,11 +4,16 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.HashMap;
 
 import javax.imageio.ImageIO;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 import mathutils.core.DrawProperties;
 import mathutils.expression.Add;
@@ -22,6 +27,8 @@ import mathutils.expression.Variable;
 import mathutils.logic.BoolInput;
 import mathutils.logic.LogicExpression;
 import mathutils.logic.SequentProver;
+import mathutils.logic.operators.And;
+import mathutils.math.matrix.Matrix;
 import mathutils.number.Number;
 import mathutils.number.WholeNumber;
 import mathutils.parser.ParserOperator;
@@ -29,8 +36,22 @@ import mathutils.parser.ParserOperator;
 public class Test {
 
 	public static void main(String[] args) {
-		testLogic();
+		// testLogic();
 		// testMath();
+		// testMatrix();
+		testParser();
+	}
+
+	public static void testMatrix() {
+		Matrix matrix = new Matrix(4, 3);
+		System.out.println(matrix);
+		matrix.set(0, 0, new WholeNumber(3));
+		matrix.set(1, 1, new WholeNumber(-2));
+		System.out.println(matrix);
+		matrix.multiply(new WholeNumber(7));
+		System.out.println(matrix);
+		matrix.add(matrix);
+		System.out.println(matrix);
 	}
 
 	public static void testParser() {
@@ -38,11 +59,64 @@ public class Test {
 
 			@Override
 			public LogicExpression assemble(LogicExpression left, LogicExpression right) {
-				// TODO Auto-generated method stub
-				return null;
+				return new And(left, right);
 			}
 
 		};
+
+		SequentProver sp = new SequentProver();
+
+		Font f = new Font("Courier New", Font.PLAIN, 12);
+		JFrame frame = new JFrame("testParser()");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setLayout(null);
+		frame.setSize(500, 600);
+
+		JTextField input = new JTextField();
+		input.setBounds(10, 10, 300, 20);
+		input.setFont(f);
+		frame.add(input);
+
+		JTextField conclusion = new JTextField();
+		conclusion.setBounds(320, 10, 150, 20);
+		conclusion.setFont(f);
+		frame.add(conclusion);
+
+		JTextArea output = new JTextArea();
+		output.setFont(f);
+		JScrollPane outputPane = new JScrollPane(output);
+		outputPane.setBounds(10, 40, 460, 510);
+		frame.add(outputPane);
+
+		ActionListener al = (e) -> {
+			String[] premises = input.getText().split(",");
+			LogicExpression[] exs = new LogicExpression[premises.length];
+			for (int i = 0; i < premises.length; i++) {
+				try {
+					exs[i] = sp.parse(premises[i]);
+				} catch (Throwable t) {
+					output.setText("Error parsing premise \"" + premises[i] + "\": " + t.getMessage());
+					return;
+				}
+			}
+			try {
+				sp.set(sp.parse(conclusion.getText()), exs);
+			} catch (Throwable t) {
+				output.setText("Error parsing conclusion \"" + conclusion.getText() + "\": " + t.getMessage());
+			}
+			try {
+				output.setText(sp.getProof());
+			} catch (NullPointerException npe) {
+				output.setText("No proof could be found.");
+			} catch (Throwable t) {
+				output.setText("Error finding proof: " + t.getMessage());
+			}
+		};
+
+		input.addActionListener(al);
+		conclusion.addActionListener(al);
+
+		frame.setVisible(true);
 	}
 
 	public static void testLogic() {
