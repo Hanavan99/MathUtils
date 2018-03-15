@@ -24,7 +24,6 @@ import mathutils.expression.Integral;
 import mathutils.expression.MathExpression;
 import mathutils.expression.Multiply;
 import mathutils.expression.Variable;
-import mathutils.logic.BoolInput;
 import mathutils.logic.LogicExpression;
 import mathutils.logic.SequentProver;
 import mathutils.logic.operators.And;
@@ -96,6 +95,7 @@ public class Test {
 					exs[i] = sp.parse(premises[i]);
 				} catch (Throwable t) {
 					output.setText("Error parsing premise \"" + premises[i] + "\": " + t.getMessage());
+					t.printStackTrace();
 					return;
 				}
 			}
@@ -103,6 +103,7 @@ public class Test {
 				sp.set(sp.parse(conclusion.getText()), exs);
 			} catch (Throwable t) {
 				output.setText("Error parsing conclusion \"" + conclusion.getText() + "\": " + t.getMessage());
+				t.printStackTrace();
 			}
 			try {
 				output.setText(sp.getProof());
@@ -110,6 +111,7 @@ public class Test {
 				output.setText("No proof could be found.");
 			} catch (Throwable t) {
 				output.setText("Error finding proof: " + t.getMessage());
+				t.printStackTrace();
 			}
 		};
 
@@ -117,25 +119,6 @@ public class Test {
 		conclusion.addActionListener(al);
 
 		frame.setVisible(true);
-	}
-
-	public static void testLogic() {
-		BoolInput p = new BoolInput('p');
-		BoolInput q = new BoolInput('q');
-		BoolInput r = new BoolInput('r');
-		BoolInput s = new BoolInput('s');
-
-		SequentProver sp = new SequentProver();
-		sp.set(r.and(q).and(p), p.and(q.and(r)));
-		System.out.println(sp.getProof());
-		sp.set(p.or(q).or(r), p);
-		System.out.println(sp.getProof());
-		sp.set(p.or(q).and(r), p.and(r).or(q.and(r)));
-		System.out.println(sp.getProof());
-		sp.set(p.or(q.and(r)), p.or(q).and(p.or(r)));
-		System.out.println(sp.getProof());
-		sp.set(p.implies(q).implies(p.implies(r)), p.implies(q.implies(r)));
-		System.out.println(sp.getProof());
 	}
 
 	public static void testMath() {

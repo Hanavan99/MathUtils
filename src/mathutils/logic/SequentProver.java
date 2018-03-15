@@ -238,9 +238,10 @@ public class SequentProver {
 				if (ex != null) {
 					if (ex instanceof BinaryOperator) {
 						BinaryOperator bo2 = (BinaryOperator) ex;
-						if (bo2 instanceof Implies && prove(proof, subProof, null, bo2.getLeft()) && !subProof.contains(bo2.getRight())) {
-							subProof.addProof(
-									subProof.createProofWithID(bo2.getRight(), DedRule.IMPLIES_ELIM, bo2, bo2.getLeft()));
+						if (bo2 instanceof Implies && prove(proof, subProof, null, bo2.getLeft())
+								&& !subProof.contains(bo2.getRight())) {
+							subProof.addProof(subProof.createProofWithID(bo2.getRight(), DedRule.IMPLIES_ELIM, bo2,
+									bo2.getLeft()));
 							return prove(proof, subProof, bo2.getRight(), end);
 						}
 					} else if (ex instanceof UnaryOperator) {
@@ -268,50 +269,53 @@ public class SequentProver {
 	 * @return the new logic expression
 	 */
 	public LogicExpression parse(String str) {
+		System.out.println(" --- BEGIN PARSE --- ");
+
 		// get rid of extra spaces
 		str = str.replace(" ", "");
 
 		char[] charstr = str.toCharArray();
 		char cur = 0;
 
+		Stack<String> ustack = new Stack<String>();
 		Stack<String> stack = new Stack<String>();
 		Stack<LogicExpression> exs = new Stack<LogicExpression>();
 
 		// loop through each character
 		for (int i = 0; i < charstr.length; i++) {
 			cur = charstr[i];
-
 			if (cur >= 'a' && cur <= 'z') {
-				exs.push(new BoolInput(cur));
-
-			} else if (cur == '^' || cur == 'V' || cur == '~' || cur == '(') {
+				exs.push(popUOps(stack, new BoolInput(cur)));
+			} else if (cur == '^' || cur == 'V' || cur == '(') {
+				stack.push(String.valueOf(cur));
+			} else if (cur == '~') {
 				stack.push(String.valueOf(cur));
 			} else if (cur == '-' && i < charstr.length - 1 && charstr[i + 1] == '>') {
 				stack.push("->");
 			} else if (cur == ')') {
-				popOps(stack, exs);
+				popOps(stack, ustack, exs);
 			}
 		}
-		popOps(stack, exs);
+		popOps(stack, ustack, exs);
 		LogicExpression ex = exs.pop();
 		System.out.println("-> " + ex);
+
+		System.out.println(" ---- END PARSE ---- ");
+
 		return ex;
 	}
 
-	private static void popOps(Stack<String> stack, Stack<LogicExpression> exs) {
+	private static void popOps(Stack<String> stack, Stack<String> ustack, Stack<LogicExpression> exs) {
 		LogicExpression left = null;
 		LogicExpression right = null;
-		String op = null;
-		System.out.println(stack);
-		while (stack.size() > 0 && !(op = stack.pop()).equals("(")) {
-			System.out.println(stack);
+		System.out.println("Current stack: " + stack);
+		while (stack.size() > 0 && !stack.peek().equals("(")) {
+			String op = stack.pop();
+			System.out.println("Popped operator " + op);
 			LogicExpression ex = null;
 			right = exs.pop();
-			if (op.equals("~")) {
-				ex = new Not(right);
-				continue;
-			}
 			left = exs.pop();
+			System.out.println("Left expression: " + left + ", Right expression: " + right);
 			switch (op) {
 			case "^":
 				ex = new And(left, right);
@@ -323,8 +327,36 @@ public class SequentProver {
 				ex = new Implies(left, right);
 				break;
 			}
+			System.out.println("New expression: " + ex);
 			exs.push(ex);
 		}
+		
+		// check for extra opening parenthesis and remove it
+		if (stack.size() > 0 && stack.peek().equals("(")) {
+			stack.pop();
+			System.out.println("Current stack: " + stack);
+		}
+		
+		// apply final unary operators
+		exs.push(popUOps(stack, exs.pop()));
+	}
+
+	private static LogicExpression popUOps(Stack<String> stack, LogicExpression ex) {
+		System.out.println(" --- BEGIN PUO --- ");
+		System.out.println("Current stack: " + stack);
+		while (stack.size() > 0 && !stack.peek().equals("(") && stack.peek().equals("~")) {
+			System.out.println("Current stack: " + stack);
+			String op = stack.pop();
+			System.out.println("Popped unary operator " + op);
+			switch (op) {
+			case "~":
+				System.out.println(ex + " is now " + ex.not());
+				ex = ex.not();
+				break;
+			}
+		}
+		System.out.println(" ---- END PUO ---- ");
+		return ex;
 	}
 
 }
