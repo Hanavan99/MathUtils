@@ -2,13 +2,13 @@ package mathutils.parser;
 
 public abstract class ParserOperator<T> {
 
-	private char op;
+	private String op;
 	
-	public ParserOperator(char op) {
+	public ParserOperator(String op) {
 		this.op = op;
 	}
 	
-	public char getOp() {
+	public String getOp() {
 		return op;
 	}
 	

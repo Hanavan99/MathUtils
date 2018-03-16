@@ -54,7 +54,7 @@ public class Test {
 	}
 
 	public static void testParser() {
-		ParserOperator<LogicExpression> and = new ParserOperator<LogicExpression>('^') {
+		ParserOperator<LogicExpression> and = new ParserOperator<LogicExpression>("^") {
 
 			@Override
 			public LogicExpression assemble(LogicExpression left, LogicExpression right) {
