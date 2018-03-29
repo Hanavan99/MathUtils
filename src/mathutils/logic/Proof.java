@@ -17,6 +17,10 @@ import mathutils.util.UnhashMap;
  */
 public class Proof implements Iterable<Proof>, Cloneable {
 
+	public static final int MODE_TEXT = 0;
+	public static final int MODE_HTML = 1;
+	public static final int COLUMN_SPACING = 40;
+
 	private ArrayList<Proof> proofs = new ArrayList<Proof>();
 	private LogicExpression step;
 	private Deduction rule;
@@ -54,7 +58,7 @@ public class Proof implements Iterable<Proof>, Cloneable {
 		this(step, rule);
 		this.id = id;
 	}
-	
+
 	public static Proof createSubProof() {
 		return new Proof((int) (Math.random() * Integer.MAX_VALUE));
 	}
@@ -62,11 +66,11 @@ public class Proof implements Iterable<Proof>, Cloneable {
 	public Proof createSimilar() {
 		return new Proof(step, rule, id + 1);
 	}
-	
+
 	public Proof createProofWithID(LogicExpression step) {
 		return new Proof(step, null, id);
 	}
-	
+
 	public Proof createProofWithID(LogicExpression result, DedRule rule, LogicExpression... steps) {
 		Proof[] psteps = new Proof[steps.length];
 		for (int i = 0; i < psteps.length; i++) {
@@ -192,7 +196,7 @@ public class Proof implements Iterable<Proof>, Cloneable {
 	public Deduction getRule() {
 		return rule;
 	}
-	
+
 	public int getID() {
 		return id;
 	}
@@ -310,10 +314,10 @@ public class Proof implements Iterable<Proof>, Cloneable {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public String toString() {
-		return toString(toMap(), 2);
+		return toString(toMap(), 2, MODE_TEXT);
 	}
 
 	/**
@@ -328,33 +332,66 @@ public class Proof implements Iterable<Proof>, Cloneable {
 	 *            the starting indent of the numbered proofs
 	 * @return a string representation of this {@code Proof} object.
 	 */
-	public String toString(Map<Proof, Integer> map, int indent) {
-		if (isLeaf()) {
-			String str = spacer(indent) + map.get(this) + ". " + step;
-			String rstr = rule.getRule().getRuleName();
-			if (rule.getSteps() != null) {
-				for (LogicExpression s : rule.getSteps()) {
-					rstr += " " + map.get(new Proof(s, null));
-				}
-			} else if (rule.getProofSteps() != null) {
-				for (Proof p : rule.getProofSteps()) {
-					rstr += " " + map.get(p);
-				}
-			}
-			return str + spacer(50 - str.length()) + rstr;
-		}
+	public String toString(Map<Proof, Integer> map, int indent, int mode) {
 		StringBuilder sb = new StringBuilder();
-		for (Proof p : proofs) {
-			if (p.isLeaf()) {
-				sb.append(p.toString(map, indent) + "\n");
-			} else {
-				sb.append(spacer(indent) + map.get(p) + ". {\n");
-				sb.append(p.toString(map, indent + 5) + "\n");
-				sb.setLength(sb.length() - 1);
-				sb.append(spacer(indent + 3) + "}\n");
+		switch (mode) {
+		case MODE_TEXT:
+			if (isLeaf()) {
+				String str = spacer(indent) + map.get(this) + ". " + step;
+				String rstr = rule.getRule().getRuleName();
+				if (rule.getSteps() != null) {
+					for (LogicExpression s : rule.getSteps()) {
+						rstr += " " + map.get(new Proof(s, null));
+					}
+				} else if (rule.getProofSteps() != null) {
+					for (Proof p : rule.getProofSteps()) {
+						rstr += " " + map.get(p);
+					}
+				}
+				return str + spacer(COLUMN_SPACING - str.length()) + rstr;
 			}
+			for (Proof p : proofs) {
+				if (p.isLeaf()) {
+					sb.append(p.toString(map, indent, mode) + "\n");
+				} else {
+					sb.append(spacer(indent) + map.get(p) + ". {\n");
+					sb.append(p.toString(map, indent + 5, mode) + "\n");
+					sb.setLength(sb.length() - 1);
+					sb.append(spacer(indent + 3) + "}\n");
+				}
+			}
+			return sb.toString();
+		case MODE_HTML:
+			if (isLeaf()) {
+				String str = spacer(indent) + "<font color='#4499FF'>" + map.get(this) + "</font>. " + step;
+				String rstr = "<font color='#BB44BB'>" + rule.getRule().getRuleName() + "</font><font color='#4499FF'>";
+				if (rule.getSteps() != null) {
+					for (LogicExpression s : rule.getSteps()) {
+						rstr += " " + map.get(new Proof(s, null));
+					}
+				} else if (rule.getProofSteps() != null) {
+					for (Proof p : rule.getProofSteps()) {
+						rstr += " " + map.get(p);
+					}
+				}
+				rstr += "</font>";
+				return str + spacer(COLUMN_SPACING - str.length() + 29) + rstr;
+			}
+			for (Proof p : proofs) {
+				if (p.isLeaf()) {
+					sb.append(p.toString(map, indent, mode) + "\n");
+				} else {
+					sb.append(spacer(indent) + "<font color='#4499FF'>" + map.get(p) + "</font>. {\n");
+					sb.append(p.toString(map, indent + 5, mode) + "\n");
+					sb.setLength(sb.length() - 1);
+					sb.append(spacer(indent + 3) + "}\n");
+				}
+			}
+			return sb.toString();
+		default:
+			return "invalid format";
 		}
-		return sb.toString();
+
 	}
 
 	/**

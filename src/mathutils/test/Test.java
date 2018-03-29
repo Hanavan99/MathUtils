@@ -7,12 +7,13 @@ import java.awt.RenderingHints;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.imageio.ImageIO;
+import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import mathutils.core.DrawProperties;
@@ -25,6 +26,7 @@ import mathutils.expression.MathExpression;
 import mathutils.expression.Multiply;
 import mathutils.expression.Variable;
 import mathutils.logic.LogicExpression;
+import mathutils.logic.Proof;
 import mathutils.logic.SequentProver;
 import mathutils.logic.operators.And;
 import mathutils.math.matrix.Matrix;
@@ -38,6 +40,7 @@ public class Test {
 		// testLogic();
 		// testMath();
 		// testMatrix();
+
 		testParser();
 	}
 
@@ -64,6 +67,7 @@ public class Test {
 		};
 
 		SequentProver sp = new SequentProver();
+		sp.setMode(Proof.MODE_HTML);
 
 		Font f = new Font("Courier New", Font.PLAIN, 12);
 		JFrame frame = new JFrame("testParser()");
@@ -72,51 +76,57 @@ public class Test {
 		frame.setSize(500, 600);
 
 		JTextField input = new JTextField();
-		input.setBounds(10, 10, 300, 20);
+		input.setBounds(10, 10, 460, 20);
 		input.setFont(f);
 		frame.add(input);
 
-		JTextField conclusion = new JTextField();
-		conclusion.setBounds(320, 10, 150, 20);
-		conclusion.setFont(f);
-		frame.add(conclusion);
-
-		JTextArea output = new JTextArea();
-		output.setFont(f);
+		JEditorPane output = new JEditorPane();
+		output.setContentType("text/html");
+		output.setEditable(false);
+		output.setBackground(new Color(32, 32, 32));
 		JScrollPane outputPane = new JScrollPane(output);
 		outputPane.setBounds(10, 40, 460, 510);
 		frame.add(outputPane);
 
 		ActionListener al = (e) -> {
-			String[] premises = input.getText().split(",");
-			LogicExpression[] exs = new LogicExpression[premises.length];
-			for (int i = 0; i < premises.length; i++) {
-				try {
-					exs[i] = sp.parse(premises[i]);
-				} catch (Throwable t) {
-					output.setText("Error parsing premise \"" + premises[i] + "\": " + t.getMessage());
-					t.printStackTrace();
-					return;
+			String inputText = input.getText();
+			if (!inputText.contains("|-")) {
+				output.setText("Input is missing a turnstile (\"|-\").");
+			} else if (inputText.trim().endsWith("|-")) {
+				output.setText("Input is missing a conclusion.");
+			} else {
+				String[] sequents = split(inputText, "|-");
+				String[] premises = sequents[0].split(",");
+				LogicExpression[] exs = new LogicExpression[premises.length];
+				for (int i = 0; i < premises.length; i++) {
+					try {
+						if (!premises[i].equals("")) {
+							exs[i] = sp.parse(premises[i]);
+						}
+					} catch (Throwable t) {
+						output.setText("Error parsing premise \"" + premises[i] + "\": " + t.getMessage());
+						t.printStackTrace();
+						return;
+					}
 				}
-			}
-			try {
-				sp.set(sp.parse(conclusion.getText()), exs);
-			} catch (Throwable t) {
-				output.setText("Error parsing conclusion \"" + conclusion.getText() + "\": " + t.getMessage());
-				t.printStackTrace();
-			}
-			try {
-				output.setText(sp.getProof());
-			} catch (NullPointerException npe) {
-				output.setText("No proof could be found.");
-			} catch (Throwable t) {
-				output.setText("Error finding proof: " + t.getMessage());
-				t.printStackTrace();
+				try {
+					sp.set(sp.parse(sequents[1]), exs);
+				} catch (Throwable t) {
+					output.setText("Error parsing conclusion \"" + sequents[1] + "\": " + t.getMessage());
+					t.printStackTrace();
+				}
+				try {
+					output.setText("<html><font face='Courier New' color='#AAAAAA'>" + sp.getProof() + "</html>");
+				} catch (NullPointerException npe) {
+					output.setText("No proof could be found.");
+				} catch (Throwable t) {
+					output.setText("Error finding proof: " + t.getMessage());
+					t.printStackTrace();
+				}
 			}
 		};
 
 		input.addActionListener(al);
-		conclusion.addActionListener(al);
 
 		frame.setVisible(true);
 	}
@@ -152,6 +162,28 @@ public class Test {
 		vars.put('x', new WholeNumber(5));
 		System.out.println(sum.evaluate(vars));
 
+	}
+
+	public static String[] split(String str, String delim) {
+		ArrayList<String> strings = new ArrayList<String>();
+		String cur = "";
+		int delimIndex = 0;
+		for (int i = 0; i < str.length(); i++) {
+			char c = str.charAt(i);
+			if (c == delim.charAt(delimIndex)) {
+				if (delimIndex == delim.length() - 1) {
+					strings.add(cur);
+					cur = "";
+					delimIndex = 0;
+				} else {
+					delimIndex++;
+				}
+			} else {
+				cur += c;
+			}
+		}
+		strings.add(cur);
+		return strings.toArray(new String[0]);
 	}
 
 }

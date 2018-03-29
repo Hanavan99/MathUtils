@@ -20,6 +20,7 @@ public class SequentProver {
 
 	private LogicExpression[] premises;
 	private LogicExpression conclusion;
+	private int proofMode = Proof.MODE_TEXT;
 
 	/**
 	 * Creates a new {@code SequentProver} object with no premises or conclusion.
@@ -61,6 +62,10 @@ public class SequentProver {
 	 */
 	public void setConclusion(LogicExpression conclusion) {
 		this.conclusion = conclusion;
+	}
+
+	public void setMode(int proofMode) {
+		this.proofMode = proofMode;
 	}
 
 	/**
@@ -109,8 +114,12 @@ public class SequentProver {
 		}
 
 		// convert proof to string and return
-		sb.append(proof.toString(proof.toMap(), 2) + "}");
-		return sb.toString();
+		sb.append(proof.toString(proof.toMap(), 2, proofMode) + "}");
+		String result = sb.toString();
+		if (proofMode == Proof.MODE_HTML) {
+			result = result.replaceAll(" ", "&nbsp;").replaceAll("\n", "\n<br />");
+		}
+		return result;
 	}
 
 	public boolean prove(LogicExpression start, LogicExpression end) {
@@ -178,9 +187,11 @@ public class SequentProver {
 			}
 		} else if (start instanceof UnaryOperator) {
 			UnaryOperator uo = (UnaryOperator) start;
-			if (uo instanceof Not && (proof.contains(uo.getExpression()) || subProof.contains(uo.getExpression()))) {
-				subProof.addProof(new Proof(new Bottom(), new Deduction(DedRule.NOT_ELIM, uo.getExpression(), uo)));
+			if (uo instanceof Not) {
+				if (proof.contains(uo.getExpression()) || subProof.contains(uo.getExpression())) {
+				subProof.addProof(subProof.createProofWithID(new Bottom(), DedRule.NOT_ELIM, uo.getExpression(), uo));
 				return prove(proof, subProof, new Bottom(), end);
+				}
 			}
 		} else if (start instanceof Bottom) {
 
@@ -232,7 +243,7 @@ public class SequentProver {
 				return prove(proof, subProof, new Bottom(), end);
 			}
 
-			// try to see if there is anything we can break down from here
+			// as a last resort, try to see if there is anything we can break down from here
 			for (Proof p : proof) {
 				LogicExpression ex = p != null ? p.getStep() : null;
 				if (ex != null) {
@@ -252,10 +263,19 @@ public class SequentProver {
 									new Proof(new Bottom(), new Deduction(DedRule.NOT_ELIM, uo2.getExpression(), uo2)));
 							return prove(proof, subProof, new Bottom(), end);
 						}
+					} else if (ex instanceof BoolInput) {
+						Proof sub = Proof.createSubProof();
+						sub.addProof(sub.createProofWithID(ex.not(), DedRule.ASSUME));
+						if (prove(proof, sub, ex.not(), new Bottom())) {
+							subProof.addProof(sub);
+							subProof.addProof(new Proof(ex, new Deduction(DedRule.PBC, sub)));
+						}
+						return prove(proof, subProof, ex, end);
 					}
 				}
 
 			}
+
 		}
 
 		return false;
@@ -330,13 +350,13 @@ public class SequentProver {
 			System.out.println("New expression: " + ex);
 			exs.push(ex);
 		}
-		
+
 		// check for extra opening parenthesis and remove it
 		if (stack.size() > 0 && stack.peek().equals("(")) {
 			stack.pop();
 			System.out.println("Current stack: " + stack);
 		}
-		
+
 		// apply final unary operators
 		exs.push(popUOps(stack, exs.pop()));
 	}
